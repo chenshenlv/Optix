@@ -98,7 +98,7 @@ bool         use_pbo = true;
 
 std::string  texture_path;
 const char*  tutorial_ptx;
-int          tutorial_number = 1;
+int          tutorial_number = 6;
 
 // Camera state
 float3       camera_up;
@@ -736,8 +736,8 @@ int main( int argc, char** argv )
         std::stringstream ss;
         ss << "tutorial" << tutorial_number << ".cu";
         std::string tutorial_ptx_path = ss.str();
+        std:: cout<< tutorial_ptx_path<<"\n";
         tutorial_ptx = sutil::getPtxString( SAMPLE_NAME, tutorial_ptx_path.c_str() );
-
         createContext();
         createGeometry();
         setupCamera();

@@ -79,7 +79,7 @@ RT_PROGRAM void pinhole_camera()
 rtTextureSampler<float4, 2> envmap;
 RT_PROGRAM void envmap_miss()
 {
-  float theta = atan2f( ray.direction.x, ray.direction.z );
+  float theta = atan2f( ray.direction.z, ray.direction.y );
   float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
   float u     = (theta + M_PIf) * (0.5f * M_1_PIf);
   float v     = 0.5f * ( 1.0f + sin(phi) );
