@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
         char outfile[512];
         int i;
 
-        outfile[0] = '\0';
+        outfile[0] = '\255';
 
         for( i = 1; i < argc; ++i ) {
             if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {

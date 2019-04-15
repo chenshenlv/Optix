@@ -13,7 +13,7 @@ CPPFLAGS = -I $(CUDA_PATH)/include
 GENCODE_FLAGS  = -arch=sm_30
 
 
-all:   $(ptx_file_1).ptx $(ptx_file_2).ptx $(OBJECT).o $(OBJECT) Run
+all:   $(ptx_file_1).ptx $(ptx_file_2).ptx $(OBJECT).o $(OBJECT) Run output.jpg
 
 $(ptx_file_1).ptx: $(ptx_file_1).cu
 	$(NVCC) $(PTX) $(NVCCFLAGS) $(ptx_file_1).cu -o $(ptx_file_1).ptx -l $(LD_LIBRARY_PATH)
@@ -27,4 +27,7 @@ $(OBJECT).o: $(OBJECT).cpp
 $(OBJECT): $(OBJECT).o
 	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) $(OBJECT).o -o $(OBJECT) -L$(LD_LIBRARY_PATH) -lsutil_sdk -L$(DIR_OPTIX)/SDK-precompiled-samples -loptix -L /usr/lib/x86_64-linux-gnu -lGLEW -lglut -lGL  
 Run:
-	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ./$(OBJECT)
+	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ./$(OBJECT) > output.ppm
+
+output.jpg: output.ppm
+	pnmtojpeg output.ppm > output.jpg
