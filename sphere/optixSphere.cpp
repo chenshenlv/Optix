@@ -37,6 +37,8 @@
 #include <optix.h>
 #include <sutil.h>
 #include "iostream"
+#include <optix_world.h>
+
 
 const char* const SAMPLE_NAME = "optixSphere";
 
@@ -63,7 +65,7 @@ int main(int argc, char* argv[])
         char outfile[512];
         int i;
 
-        outfile[0] = '\255';
+        outfile[0] = '\0';
 
         for( i = 1; i < argc; ++i ) {
             if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
@@ -175,14 +177,14 @@ void createContext( RTcontext* context, RTbuffer* output_buffer_obj )
     RT_CHECK_ERROR( rtContextDeclareVariable( *context, "W" , &W) );
 
     optix::float3 cam_eye = { 0.0f, 0.0f, 5.0f };
-    optix::float3 lookat  = { 0.0f, 0.0f, 0.0f };
+    optix::float3 CIO  = { 0.0f, 0.0f, 0.0f };
     optix::float3 up      = { 0.0f, 1.0f, 0.0f };
     hfov      = 60.0f;
     aspect_ratio = (float)width/(float)height;
     optix::float3 camera_u, camera_v, camera_w;
-    sutil::calculateCameraVariables(
-            cam_eye, lookat, up, hfov, aspect_ratio,
-            camera_u, camera_v, camera_w );
+    camera_w=normalize(cam_eye-CIO);
+    camera_u=cross(up,camera_w);
+    camera_v=cross(camera_w,camera_u);
 
     RT_CHECK_ERROR( rtVariableSet3fv( eye, &cam_eye.x ) );
     RT_CHECK_ERROR( rtVariableSet3fv( U, &camera_u.x ) );
@@ -198,8 +200,6 @@ void createContext( RTcontext* context, RTbuffer* output_buffer_obj )
     // /* Miss program */
     ptx = "/home/jason/CUDA/Optix/sphere/background.ptx" ;
     RT_CHECK_ERROR( rtProgramCreateFromPTXFile( *context, ptx, "miss", &miss_program ) );
-    // RT_CHECK_ERROR( rtProgramDeclareVariable( miss_program, "bg_color" , &bg_color) );
-    // RT_CHECK_ERROR( rtVariableSet3f( bg_color, .3f, 0.1f, 0.2f ) );
     RT_CHECK_ERROR( rtContextSetMissProgram( *context, 0, miss_program ) );
 }
 

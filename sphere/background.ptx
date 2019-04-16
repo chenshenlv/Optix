@@ -61,8 +61,8 @@
 	mov.f32 	%f4, 0f3F800000;
 	sub.f32 	%f5, %f4, %f3;
 	fma.rn.f32 	%f6, %f3, 0f3F000000, %f5;
-	fma.rn.f32 	%f7, %f3, 0f3F333333, %f5;
-	add.f32 	%f8, %f3, %f5;
+	fma.rn.f32 	%f7, %f3, 0f3F19999A, %f5;
+	fma.rn.f32 	%f8, %f3, 0f3F666666, %f5;
 	st.global.f32 	[prd_radiance], %f6;
 	st.global.f32 	[prd_radiance+4], %f7;
 	st.global.f32 	[prd_radiance+8], %f8;

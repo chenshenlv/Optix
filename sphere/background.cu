@@ -42,5 +42,6 @@ rtDeclareVariable(optix::Ray, theRay, rtCurrentRay,);
 RT_PROGRAM void miss()
 {
 	const float t = 0.5f*(theRay.direction.y+1.0f);
-    prd_radiance.result = make_float3((1.0f-t))*make_float3(1.0f, 1.0f, 1.0f) + t*make_float3(0.5f, 0.7f, 1.0f);
+    prd_radiance.result = make_float3((1.0f-t))*make_float3(1.0f, 1.0f, 1.0f) + 
+    t*make_float3(0.5f, 0.6f, 0.9f);
 }
