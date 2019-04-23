@@ -39,9 +39,9 @@ struct BasicLight
 #if defined(__cplusplus)
   typedef optix::float3 float3;
 #endif
-  float3 pos;
+  float3 pos;  // 3*4 bytes
   float3 color;
-  int    casts_shadow; 
+  int    casts_shadow; // 4 bytes
   int    padding;      // make this structure 32 bytes -- powers of two are your friend!
 };
 

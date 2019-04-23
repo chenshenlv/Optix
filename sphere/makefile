@@ -7,19 +7,28 @@ NVCC = nvcc
 OBJECT = optixSphere
 ptx_file_1 = pincamera
 ptx_file_2 = background
+ptx_file_3 = sphere
+ptx_file_4 = normal_shader
+
 PTX = -ptx -m64
 NVCCFLAGS = -I $(DIR_OPTIX)/include -I $(DIR_OPTIX)/SDK/sutil 
 CPPFLAGS = -I $(CUDA_PATH)/include
 GENCODE_FLAGS  = -arch=sm_30
 
 
-all:   $(ptx_file_1).ptx $(ptx_file_2).ptx $(OBJECT).o $(OBJECT) Run 
+all:    $(ptx_file_1).ptx $(ptx_file_2).ptx $(ptx_file_3).ptx $(ptx_file_4).ptx $(OBJECT).o $(OBJECT) Run 
 
 $(ptx_file_1).ptx: $(ptx_file_1).cu
 	$(NVCC) $(PTX) $(NVCCFLAGS) $(ptx_file_1).cu -o $(ptx_file_1).ptx -l $(LD_LIBRARY_PATH)
 
 $(ptx_file_2).ptx: $(ptx_file_2).cu
 	$(NVCC) $(PTX) $(NVCCFLAGS) $(ptx_file_2).cu -o $(ptx_file_2).ptx -l $(LD_LIBRARY_PATH)
+
+$(ptx_file_3).ptx: $(ptx_file_3).cu
+	$(NVCC) $(PTX) $(NVCCFLAGS) $(ptx_file_3).cu -o $(ptx_file_3).ptx -l $(LD_LIBRARY_PATH)
+
+$(ptx_file_4).ptx: $(ptx_file_4).cu
+	$(NVCC) $(PTX) $(NVCCFLAGS) $(ptx_file_4).cu -o $(ptx_file_4).ptx -l $(LD_LIBRARY_PATH)
 
 $(OBJECT).o: $(OBJECT).cpp
 	$(NVCC)  $(NVCCFLAGS) $(GENCODE_FLAGS) -c $(OBJECT).cpp -o $(OBJECT).o -L ~/CUDA/Optix/lib -lsutil_sdk -L$(DIR_OPTIX)/SDK-precompiled-samples -loptix -L /usr/lib/x86_64-linux-gnu -lGLEW -lglut -lGL 

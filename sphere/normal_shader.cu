@@ -28,36 +28,47 @@
 
 #include <optix.h>
 #include <optixu/optixu_math_namespace.h>
+#include "per_ray_data.h"
+#include "common.h"
 
 using namespace optix;
 
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, ); 
-
-struct PerRayData_radiance
-{
-  float3 result;
-  float importance;
-  int depth;
-};
-
-struct PerRayData_shadow
-{
-  float3 attenuation;
-};
-
+rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, ); 
 rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
-rtDeclareVariable(PerRayData_shadow,   prd_shadow,   rtPayload, );
+rtDeclareVariable(PerRayData_shadow, prd_shadow, rtPayload, );
+rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
+rtDeclareVariable(float, t_hit, rtIntersectionDistance, );
+rtDeclareVariable(float3, Ka, , );
+rtDeclareVariable(float3, Kd, , );
+rtDeclareVariable(float3, ambient_color, , );
+rtBuffer<BasicLight> light_buffer;
 
 
 RT_PROGRAM void any_hit_shadow()
 {
   // this material is opaque, so it fully attenuates all shadow rays
-  prd_shadow.attenuation = make_float3(0);
+  prd_shadow.attenuation = make_float3(0.5f,0.3f,0.9f);
 
   rtTerminateRay();
 }
 
 RT_PROGRAM void closest_hit_radiance()
 {
-  prd_radiance.result = normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal))*0.5f + 0.5f;
+	float3 world_geo_normal=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD,geometric_normal));
+	float3 world_shade_normal=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD,shading_normal));
+	float3 ffnormal = optix::faceforward(world_shade_normal, -ray.direction, world_geo_normal);
+	float3 color = Ka * ambient_color;
+	float3 hit_point=ray.origin + t_hit * ray.direction;
+
+	for(int i = 0; i < light_buffer.size(); ++i)
+	{
+		BasicLight light = light_buffer[i];
+		float3 L=normalize(light.pos - hit_point);
+		float Diffuse_index=dot(L,ffnormal);
+
+		if (Diffuse_index >= 0) color += Kd * Diffuse_index * light.color;
+	}
+
+  prd_radiance.result = color;
 }

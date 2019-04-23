@@ -38,17 +38,20 @@
 #include <sutil.h>
 #include "iostream"
 #include <optix_world.h>
+#include "common.h"
+
 
 
 const char* const SAMPLE_NAME = "optixSphere";
 
-int width = 1024;
-int height = 768;
+int width = 800;
+int height = 800;
 
 void createContext( RTcontext* context, RTbuffer* buffer );
-// void createGeometry( RTcontext context, RTgeometry* sphere );
-// void createMaterial( RTcontext context, RTmaterial* material );
-// void createInstance( RTcontext context, RTgeometry sphere, RTmaterial material );
+void createLight(RTcontext context, RTbuffer* buffer);
+void createGeometry( RTcontext context, RTgeometry* sphere );
+void createMaterial( RTcontext context, RTmaterial* material );
+void createInstance( RTcontext context, RTgeometry sphere, RTmaterial material );
 void printUsageAndExit( const char* argv0 );
 
 
@@ -59,8 +62,9 @@ int main(int argc, char* argv[])
     {
         /* Primary RTAPI objects */
         RTbuffer            output_buffer_obj;
-        // RTgeometry          sphere;
-        // RTmaterial          material;
+        RTbuffer            light_buffer_obj;
+        RTgeometry          sphere;
+        RTmaterial          material;
 
         char outfile[512];
         int i;
@@ -92,12 +96,13 @@ int main(int argc, char* argv[])
 
         /* Setup state */
         createContext( &context, &output_buffer_obj );
-        // createGeometry( context, &sphere );
-        // createMaterial( context, &material);
-        // createInstance( context, sphere, material );
+        createLight(context, &light_buffer_obj );
+        createGeometry( context, &sphere );
+        createMaterial( context, &material);
+        createInstance( context, sphere, material );
 
         /* Run */
-        // RT_CHECK_ERROR( rtContextValidate( context ) );
+        RT_CHECK_ERROR( rtContextValidate( context ) );
         RT_CHECK_ERROR( rtContextLaunch2D( context, 0, width, height ) );
 
         /* Display image */
@@ -145,21 +150,6 @@ void createContext( RTcontext* context, RTbuffer* output_buffer_obj )
 
     RT_CHECK_ERROR( rtVariableSet1f( epsilon, 1.e-4f ) );
 
-    /* Setup empty top-object*/
-    RTgeometrygroup geometrygroup;
-    RTvariable      top_object;
-    RTacceleration  acceleration;
-
-
-    RT_CHECK_ERROR( rtAccelerationCreate( *context, &acceleration ) );
-    RT_CHECK_ERROR( rtAccelerationSetBuilder( acceleration, "NoAccel" ) );
-    RT_CHECK_ERROR( rtGeometryGroupCreate( *context, &geometrygroup ) );
-    RT_CHECK_ERROR( rtGeometryGroupSetChildCount( geometrygroup, 0 ) );
-    // RT_CHECK_ERROR( rtGeometryGroupSetChild( geometrygroup, 0, instance ) );
-    RT_CHECK_ERROR( rtGeometryGroupSetAcceleration( geometrygroup, acceleration ) );
-
-    RT_CHECK_ERROR( rtContextDeclareVariable( *context, "top_object", &top_object ) );
-    RT_CHECK_ERROR( rtVariableSetObject( top_object, geometrygroup ) );
 
     /* Render result buffer */
     RT_CHECK_ERROR( rtBufferCreate( *context, RT_BUFFER_OUTPUT, output_buffer_obj ) );
@@ -176,7 +166,7 @@ void createContext( RTcontext* context, RTbuffer* output_buffer_obj )
     RT_CHECK_ERROR( rtContextDeclareVariable( *context, "V" , &V) );
     RT_CHECK_ERROR( rtContextDeclareVariable( *context, "W" , &W) );
 
-    optix::float3 cam_eye = { 0.0f, 0.0f, 5.0f };
+    optix::float3 cam_eye = { 0.0f, 0.0f, 10.0f };
     optix::float3 CIO  = { 0.0f, 0.0f, 0.0f };
     optix::float3 up      = { 0.0f, 1.0f, 0.0f };
     hfov      = 60.0f;
@@ -204,65 +194,93 @@ void createContext( RTcontext* context, RTbuffer* output_buffer_obj )
 }
 
 
-// void createGeometry( RTcontext context, RTgeometry* sphere )
-// {
-//     RTprogram  intersection_program;
-//     RTprogram  bounding_box_program;
-//     RTvariable s;
-//     float sphere_loc[4] =  {0, 0, 0, 1.5};
+void createGeometry( RTcontext context, RTgeometry* sphere )
+{
+    RTprogram  intersection_program;
+    RTprogram  bounding_box_program;
+    RTvariable s;
+    float sphere_loc[4] =  {0, 0, 20, 2.5};
 
-//     RT_CHECK_ERROR( rtGeometryCreate( context, sphere ) );
-//     RT_CHECK_ERROR( rtGeometrySetPrimitiveCount( *sphere, 1u ) );
+    RT_CHECK_ERROR( rtGeometryCreate( context, sphere ) );
+    RT_CHECK_ERROR( rtGeometrySetPrimitiveCount( *sphere, 1u ) );
 
-//     const char *ptx = sutil::getPtxString( SAMPLE_NAME, "sphere.cu" );
-//     RT_CHECK_ERROR( rtProgramCreateFromPTXString( context, ptx, "bounds", &bounding_box_program) );
-//     RT_CHECK_ERROR( rtGeometrySetBoundingBoxProgram( *sphere, bounding_box_program ) );
-//     RT_CHECK_ERROR( rtProgramCreateFromPTXString( context, ptx, "intersect", &intersection_program) );
-//     RT_CHECK_ERROR( rtGeometrySetIntersectionProgram( *sphere, intersection_program ) );
+    const char *ptx = "/home/jason/CUDA/Optix/sphere/sphere.ptx" ;
+    RT_CHECK_ERROR( rtProgramCreateFromPTXFile( context, ptx, "bounds", &bounding_box_program) );
+    RT_CHECK_ERROR( rtGeometrySetBoundingBoxProgram( *sphere, bounding_box_program ) );
+    RT_CHECK_ERROR( rtProgramCreateFromPTXFile( context, ptx, "robust_intersect", &intersection_program) );
+    RT_CHECK_ERROR( rtGeometrySetIntersectionProgram( *sphere, intersection_program ) );
 
-//     RT_CHECK_ERROR( rtGeometryDeclareVariable( *sphere, "sphere" , &s) );
-//     RT_CHECK_ERROR( rtVariableSet4fv( s, &sphere_loc[0] ) );
-// }
-
-
-// void createMaterial( RTcontext context, RTmaterial* material )
-// {
-//     RTprogram chp;
-
-//     const char *ptx = sutil::getPtxString( SAMPLE_NAME, "normal_shader.cu" );
-//     RT_CHECK_ERROR( rtProgramCreateFromPTXString( context, ptx, "closest_hit_radiance", &chp ) );
-
-//     RT_CHECK_ERROR( rtMaterialCreate( context, material ) );
-//     RT_CHECK_ERROR( rtMaterialSetClosestHitProgram( *material, 0, chp) );
-// }
+    RT_CHECK_ERROR( rtGeometryDeclareVariable( *sphere, "sphere" , &s) );
+    RT_CHECK_ERROR( rtVariableSet4fv( s, &sphere_loc[0] ) );
+}
 
 
-// void createInstance( RTcontext context, RTgeometry sphere, RTmaterial material )
-// {
-//     RTgeometrygroup geometrygroup;
-//     RTvariable      top_object;
-//     RTacceleration  acceleration;
-//     RTgeometryinstance instance;
+void createMaterial( RTcontext context, RTmaterial* material )
+{
+    RTprogram chp;
+    RTvariable Ka;
+    RTvariable Kd;
 
-//     /* Create geometry instance */
-//     RT_CHECK_ERROR( rtGeometryInstanceCreate( context, &instance ) );
-//     RT_CHECK_ERROR( rtGeometryInstanceSetGeometry( instance, sphere ) );
-//     RT_CHECK_ERROR( rtGeometryInstanceSetMaterialCount( instance, 1 ) );
-//     RT_CHECK_ERROR( rtGeometryInstanceSetMaterial( instance, 0, material ) );
+    const char *ptx = "/home/jason/CUDA/Optix/sphere/normal_shader.ptx" ;
+    RT_CHECK_ERROR( rtProgramCreateFromPTXFile (context, ptx, "closest_hit_radiance", &chp ));
 
-//     /* Create geometry group */
-//     RT_CHECK_ERROR( rtAccelerationCreate( context, &acceleration ) );
-//     RT_CHECK_ERROR( rtAccelerationSetBuilder( acceleration, "NoAccel" ) );
-//     RT_CHECK_ERROR( rtGeometryGroupCreate( context, &geometrygroup ) );
-//     RT_CHECK_ERROR( rtGeometryGroupSetChildCount( geometrygroup, 1 ) );
-//     RT_CHECK_ERROR( rtGeometryGroupSetChild( geometrygroup, 0, instance ) );
-//     RT_CHECK_ERROR( rtGeometryGroupSetAcceleration( geometrygroup, acceleration ) );
+    RT_CHECK_ERROR( rtMaterialCreate( context, material ) );
+    RT_CHECK_ERROR( rtMaterialSetClosestHitProgram( *material, 0, chp) );
+    RT_CHECK_ERROR( rtContextDeclareVariable(context, "Ka", &Ka));
+    RT_CHECK_ERROR( rtContextDeclareVariable(context, "Kd", &Kd));
 
-//     RT_CHECK_ERROR( rtContextDeclareVariable( context, "top_object", &top_object ) );
-//     RT_CHECK_ERROR( rtVariableSetObject( top_object, geometrygroup ) );
-// }
+    RT_CHECK_ERROR( rtVariableSet3f(Ka,0.3f, 0.3f, 0.3f));
+    RT_CHECK_ERROR( rtVariableSet3f(Kd,0.6f, 0.7f, 0.8f));
 
 
+}
+
+
+void createInstance( RTcontext context, RTgeometry sphere, RTmaterial material )
+{
+    RTgeometrygroup geometrygroup;
+    RTvariable      top_object;
+    RTacceleration  acceleration;
+    RTgeometryinstance instance;
+
+    /* Create geometry instance */
+    RT_CHECK_ERROR( rtGeometryInstanceCreate( context, &instance ) );
+    RT_CHECK_ERROR( rtGeometryInstanceSetGeometry( instance, sphere ) );
+    RT_CHECK_ERROR( rtGeometryInstanceSetMaterialCount( instance, 1 ) );
+    RT_CHECK_ERROR( rtGeometryInstanceSetMaterial( instance, 0, material ) );
+
+    /* Create geometry group */
+    RT_CHECK_ERROR( rtAccelerationCreate( context, &acceleration ) );
+    RT_CHECK_ERROR( rtAccelerationSetBuilder( acceleration, "NoAccel" ) );
+    RT_CHECK_ERROR( rtGeometryGroupCreate( context, &geometrygroup ) );
+    RT_CHECK_ERROR( rtGeometryGroupSetChildCount( geometrygroup, 1 ) );
+    RT_CHECK_ERROR( rtGeometryGroupSetChild( geometrygroup, 0, instance ) );
+    RT_CHECK_ERROR( rtGeometryGroupSetAcceleration( geometrygroup, acceleration ) );
+
+    RT_CHECK_ERROR( rtContextDeclareVariable( context, "top_object", &top_object ) );
+    RT_CHECK_ERROR( rtVariableSetObject( top_object, geometrygroup ) );
+
+}
+
+void createLight(RTcontext context, RTbuffer* light_buffer_obj)
+{
+    RTvariable  light_buffer;
+    BasicLight* data;
+    BasicLight lights[] = {
+         {optix::make_float3(-20.0f, 60.0f, -16.0f), optix::make_float3(1.0f, 1.0f, 1.0f), 1}
+    }; // pos, initial light, cast shadow
+
+    RT_CHECK_ERROR(rtContextDeclareVariable(context, "light_buffer", &light_buffer));
+
+    RT_CHECK_ERROR(rtBufferCreate(context, RT_BUFFER_INPUT, light_buffer_obj ));
+    RT_CHECK_ERROR(rtBufferSetFormat(*light_buffer_obj, RT_FORMAT_USER));
+    RT_CHECK_ERROR(rtBufferSetElementSize(*light_buffer_obj, sizeof(BasicLight)));
+    RT_CHECK_ERROR(rtBufferSetSize1D(*light_buffer_obj, sizeof(lights)/sizeof(lights[0])));
+    RT_CHECK_ERROR(rtBufferMap(*light_buffer_obj,(void**)&data));
+    memcpy(data, &lights[0], sizeof(lights));
+    rtBufferUnmap(*light_buffer_obj);
+    RT_CHECK_ERROR(rtVariableSetObject(light_buffer, *light_buffer_obj)); //set rtvariable light_buffer with light_buffer_obj;
+}
 void printUsageAndExit( const char* argv0 )
 {
     fprintf( stderr, "Usage  : %s [options]\n", argv0 );

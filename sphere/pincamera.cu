@@ -1,15 +1,9 @@
 #include <optix_world.h>
 #include "common.h"
 #include "helpers.h"
-
+#include "per_ray_data.h"
 using namespace optix;
 
-struct PerRayData_radiance
-{
-  float3 result;
-  float  importance;
-  int    depth;
-};
 
 rtDeclareVariable(float3,        eye, , );
 rtDeclareVariable(float3,        U, , );
@@ -46,7 +40,7 @@ RT_PROGRAM void pinhole_camera()
 // #ifdef TIME_VIEW
 //   clock_t t1 = clock(); 
  
-//   float expected_fps   = 1.0f;
+//   float expected_fps   = 24.0f;
 //   float pixel_time     = ( t1 - t0 ) * time_view_scale * expected_fps;
 //   output_buffer[launch_index] = make_color( make_float3(  pixel_time ) ); 
 // #else

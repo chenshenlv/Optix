@@ -28,20 +28,15 @@
 
 #include <optix_world.h>
 #include "helpers.h"
+#include "per_ray_data.h"
 
-struct PerRayData_radiance
-{
-  float3 result;
-  float importance;
-  int depth;
-};
 
 rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
-rtDeclareVariable(optix::Ray, theRay, rtCurrentRay,);
+rtDeclareVariable(optix::Ray, ray, rtCurrentRay,);
 
 RT_PROGRAM void miss()
 {
-	const float t = 0.5f*(theRay.direction.y+1.0f);
+	const float t = 0.5f*(ray.direction.y+1.0f);//normalize t between[0,1]
     prd_radiance.result = make_float3((1.0f-t))*make_float3(1.0f, 1.0f, 1.0f) + 
     t*make_float3(0.5f, 0.6f, 0.9f);
 }
